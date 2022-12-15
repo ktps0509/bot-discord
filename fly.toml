@@ -1,0 +1,8 @@
+# fly.toml file generated for commu-bot-discord on 2022-12-15T12:15:38+07:00
+
+app = "commu-bot-discord"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
