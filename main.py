@@ -60,7 +60,7 @@ async def on_voice_state_update(member, before, after):
                     # user mute, deafen or streaming on voice channel same as bot
                     if bot.voice_clients[0].channel.id == after.channel.id:
                         guild = after.channel.guild
-                        if after.self_mute is True:
+                        if after.self_mute is True and after.self_stream == before.self_stream:
                             tts = gTTS(member_name + 'ปิดไม',
                                        lang='th', slow=True)
                         elif after.self_stream == True and after.self_mute == before.self_mute:
