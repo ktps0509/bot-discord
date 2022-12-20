@@ -27,86 +27,54 @@ async def on_voice_state_update(member, before, after):
     member_name = str(member).split("#")[0]
 
     if len(bot.voice_clients) > 0:
-
-        # got action
+        # voice channel has activity
         if before.channel is not None or after.channel is not None:
-            # Join
+            guild = None
+            tts = None
+            # user join channel first time
             if before.channel is None and after.channel is not None:
+                # user join same voice channel  as bot ?
                 if bot.voice_clients[0].channel.id == after.channel.id:
                     tts = gTTS(member_name + ' เข้ามา', lang='th', slow=True)
-                    tts.save('member.mp3')
-
                     guild = after.channel.guild
-
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
-
-            # Leave
-            if before.channel is not None and after.channel is None:
+            # user leave from this server
+            elif before.channel is not None and after.channel is None:
+                # user leave from same channel as bot ?
                 if bot.voice_clients[0].channel.id == before.channel.id:
                     tts = gTTS(member_name + ' ออกไป', lang='th', slow=True)
-                    tts.save('member.mp3')
-
                     guild = before.channel.guild
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
+            # user move the other voice channel, mute, defean, streaming
+            else:
+                # check user move to, move from which voice channel
+                if after.self_mute == before.self_mute and after.self_deaf == before.self_deaf and after.self_stream == before.self_stream:
+                    # move to same voice channel as bot
+                    if bot.voice_clients[0].channel.id == after.channel.id:
+                        tts = gTTS(member_name + ' ย้ายมาจากห้อง' +
+                                   str(before.channel), lang='th', slow=True)
+                        guild = after.channel.guild
+                    elif bot.voice_clients[0].channel.id == before.channel.id:
+                        tts = gTTS(member_name + ' ย้ายไปห้อง' +
+                                   str(after.channel), lang='th', slow=True)
+                        guild = before.channel.guild
+                else:
+                    # user mute, deafen or streaming on voice channel same as bot
+                    if bot.voice_clients[0].channel.id == after.channel.id:
+                        guild = after.channel.guild
+                        if after.self_mute is True:
+                            tts = gTTS(member_name + 'ปิดไม',
+                                       lang='th', slow=True)
+                        elif after.self_stream == True and after.self_mute == before.self_mute:
+                            tts = gTTS(member_name + 'กำลังสตรีม',
+                                       lang='th', slow=True)
 
-            # move to another channel or action
-            if before.channel is not None and after.channel is not None:
-                if bot.voice_clients[0].channel.id == before.channel.id and after.self_mute == before.self_mute:
-                    tts = gTTS(member_name + ' ออกไปห้อง' +
-                               str(after.channel), lang='th', slow=True)
-                    tts.save('member.mp3')
+            if guild is not None and tts is not None:
+                tts.save('member.mp3')
+                voice_client: discord.VoiceClient = discord.utils.get(
+                    bot.voice_clients, guild=guild)
+                audio_source = discord.FFmpegPCMAudio('member.mp3')
 
-                    guild = before.channel.guild
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
-
-                if bot.voice_clients[0].channel.id == after.channel.id and after.self_mute == before.self_mute:
-                    tts = gTTS(member_name + ' ย้ายมาจากห้อง' +
-                               str(before.channel), lang='th', slow=True)
-                    tts.save('member.mp3')
-
-                    guild = after.channel.guild
-
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
-
-                if member.id == 242298671469821956 and after.self_mute is True:
-                    tts = gTTS('เอิร์ธปิดไมไปคุยกับผู้หญิง',
-                               lang='th', slow=True)
-                    tts.save('member.mp3')
-
-                    guild = after.channel.guild
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
-
-                if after.self_stream == True and after.self_mute == before.self_mute:
-                    tts = gTTS(member_name + 'กำลังสตรีมจอ',
-                               lang='th', slow=True)
-                    tts.save('member.mp3')
-
-                    guild = after.channel.guild
-                    voice_client: discord.VoiceClient = discord.utils.get(
-                        bot.voice_clients, guild=guild)
-                    audio_source = discord.FFmpegPCMAudio('member.mp3')
-                    if not voice_client.is_playing():
-                        voice_client.play(audio_source, after=None)
+                if not voice_client.is_playing():
+                    voice_client.play(audio_source, after=None)
 
 
 def is_connected(ctx):
