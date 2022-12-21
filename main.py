@@ -14,10 +14,16 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='#', intents=intents)
 
 
+def isBot(m):
+    return m.author == bot.user
+
+def is_connected(ctx):
+    voice_client = get(ctx.bot.voice_clients, guild=ctx.guild)
+    return voice_client and voice_client.is_connected()
+
 @bot.event
 async def on_ready():
     print(f"Logged in As {bot.user}")
-
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -76,12 +82,6 @@ async def on_voice_state_update(member, before, after):
                 if not voice_client.is_playing():
                     voice_client.play(audio_source, after=None)
 
-
-def is_connected(ctx):
-    voice_client = get(ctx.bot.voice_clients, guild=ctx.guild)
-    return voice_client and voice_client.is_connected()
-
-
 @bot.command()
 async def join(ctx):
     checkBotIsConnected = is_connected(ctx)
@@ -104,5 +104,9 @@ async def leave(ctx):
     else:
         await ctx.send("ตม. เลิกงาน")
 
+
+@bot.command()
+async def clear(ctx):
+   await ctx.channel.purge(limit=100, check=isBot)
 
 bot.run(os.getenv('TOKEN'))
