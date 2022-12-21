@@ -6,6 +6,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from gtts import gTTS
 from discord import FFmpegPCMAudio
+import datetime
+from datetime import timedelta
+from zeep import Client
+from lxml import etree
+client = Client('https://orapiweb.pttor.com/oilservice/OilPrice.asmx?WSDL')
 
 load_dotenv()
 
@@ -17,13 +22,53 @@ bot = commands.Bot(command_prefix='#', intents=intents)
 def isBot(m):
     return m.author == bot.user
 
+
 def is_connected(ctx):
     voice_client = get(ctx.bot.voice_clients, guild=ctx.guild)
     return voice_client and voice_client.is_connected()
 
+
+def getOilPrice():
+
+    embed = discord.Embed(title="ราคาน้ำมันจาก ปตท.",
+                          colour=discord.Colour.random())
+    embed.set_author(name=f"{bot.user}")
+    embed.set_thumbnail(url=f"{bot.user.display_avatar}")
+    # datenow
+    dateNow = str(datetime.date.today())
+    dn = dateNow.split("-")
+    result = client.service.GetOilPrice("en", dn[2], dn[1], dn[0])
+    root = etree.fromstring(result)
+    embed.add_field(name="ราคาน้ำมันวันที่ ",
+                    value=f"{str(dateNow)}", inline=False)
+    for r in root.xpath('FUEL'):
+        product = r.xpath('PRODUCT/text()')[0]
+        price = r.xpath('PRICE/text()') or [0]
+        price = str(price).translate({ord(i): None for i in "'[]"})
+        embed.add_field(name=f"{str(product)}",
+                        value=f"{str(price)} บาท", inline=True)
+
+    # tomorrow
+    tomorrow = str(datetime.date.today()+timedelta(1))
+    tm = tomorrow.split("-")
+    result2 = client.service.GetOilPrice("en", tm[2], tm[1], tm[0])
+    root2 = etree.fromstring(result2)
+    embed.add_field(name="ราคาน้ำมันวันที่ ",
+                    value=f"{str(tomorrow)}", inline=False)
+    for r in root2.xpath('FUEL'):
+        product = r.xpath('PRODUCT/text()')[0]
+        price = r.xpath('PRICE/text()') or [0]
+        price = str(price).translate({ord(i): None for i in "'[]"})
+        embed.add_field(name=f"{str(product)}",
+                        value=f"{str(price)} บาท", inline=True)
+
+    return embed
+
+
 @bot.event
 async def on_ready():
     print(f"Logged in As {bot.user}")
+
 
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -82,6 +127,7 @@ async def on_voice_state_update(member, before, after):
                 if not voice_client.is_playing():
                     voice_client.play(audio_source, after=None)
 
+
 @bot.command()
 async def join(ctx):
     checkBotIsConnected = is_connected(ctx)
@@ -107,6 +153,12 @@ async def leave(ctx):
 
 @bot.command()
 async def clear(ctx):
-   await ctx.channel.purge(limit=100, check=isBot)
+    await ctx.channel.purge(limit=100, check=isBot)
+
+
+@bot.command()
+async def fuel(ctx):
+    result_embed = getOilPrice()
+    await ctx.send(embed=result_embed)
 
 bot.run(os.getenv('TOKEN'))
